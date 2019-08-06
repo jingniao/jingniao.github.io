@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.2.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.2.0" color="#222">
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/main.css?v=7.2.0">
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.2.0',
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    translation: {
+      copy_button: '复制',
+      copy_success: '复制成功',
+      copy_failure: '复制失败'
+    }
+  };
+</script>
+
+  <meta name="description" content="背景介绍之前手上的一个Ceph 0.94.9集群因为突然断电，三个MON都因为leveldb的问题而无法启动。 已有的解决方案 从已死的集群中恢复rbd镜像-ceph官方 Ceph的Mon数据重新构建工具-张鹏 或者   官方的文档 这两个是同一个方法  我这里选择第二种">
+<meta name="keywords" content="shell,ceph">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从osd恢复mon数据">
+<meta property="og:url" content="https://jingniao.github.io/2017/03/30/ceph-rebuild-mon-data-from-osds/index.html">
+<meta property="og:site_name" content="惊鸟的技术小站">
+<meta property="og:description" content="背景介绍之前手上的一个Ceph 0.94.9集群因为突然断电，三个MON都因为leveldb的问题而无法启动。 已有的解决方案 从已死的集群中恢复rbd镜像-ceph官方 Ceph的Mon数据重新构建工具-张鹏 或者   官方的文档 这两个是同一个方法  我这里选择第二种">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2019-08-06T01:12:29.485Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="从osd恢复mon数据">
+<meta name="twitter:description" content="背景介绍之前手上的一个Ceph 0.94.9集群因为突然断电，三个MON都因为leveldb的问题而无法启动。 已有的解决方案 从已死的集群中恢复rbd镜像-ceph官方 Ceph的Mon数据重新构建工具-张鹏 或者   官方的文档 这两个是同一个方法  我这里选择第二种">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="惊鸟的技术小站" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="https://jingniao.github.io/2017/03/30/ceph-rebuild-mon-data-from-osds/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  
+  <title>从osd恢复mon数据 | 惊鸟的技术小站</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">惊鸟的技术小站</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">坚持记录</p>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>首页</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://jingniao.github.io/2017/03/30/ceph-rebuild-mon-data-from-osds/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="惊鸟">
+      <meta itemprop="description" content="python,运维">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="惊鸟的技术小站">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">从osd恢复mon数据
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+
+          
+          
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2017-03-30 21:15:34" itemprop="dateCreated datePublished" datetime="2017-03-30T21:15:34+00:00">2017-03-30</time>
+            </span>
+          
+
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-08-06 01:12:29" itemprop="dateModified" datetime="2019-08-06T01:12:29+00:00">2019-08-06</time>
+              </span>
+            
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          <br>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h1><p>之前手上的一个Ceph 0.94.9集群因为突然断电，三个MON都因为leveldb的问题而无法启动。</p>
+<h1 id="已有的解决方案"><a href="#已有的解决方案" class="headerlink" title="已有的解决方案"></a>已有的解决方案</h1><ol>
+<li><a href="http://ceph.com/planet/ceph-recover-a-rbd-image-from-a-dead-cluster/" target="_blank" rel="noopener">从已死的集群中恢复rbd镜像-ceph官方</a></li>
+<li><a href="http://www.zphj1987.com/2016/09/20/Ceph%E7%9A%84Mon%E6%95%B0%E6%8D%AE%E9%87%8D%E6%96%B0%E6%9E%84%E5%BB%BA%E5%B7%A5%E5%85%B7/" target="_blank" rel="noopener">Ceph的Mon数据重新构建工具-张鹏</a> 或者   <a href="http://docs.ceph.com/docs/hammer/rados/troubleshooting/troubleshooting-mon/#recovery-using-osds" target="_blank" rel="noopener">官方的文档</a> 这两个是同一个方法</li>
+</ol>
+<p>我这里选择第二种</p>
+<a id="more"></a> 
+<h1 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h1><p><code>ceph-objectstore-tool</code>是从osd收集mon相关数据，这个工具从Hammer(0.94系列)应该就在Ceph中默认安装，并且可以使用，但是收集mon数据的参数<code>--op update-mon-db</code>却是在<code>0.94.10</code>版本中才添加进去的<br><code>ceph-monstore-tool</code>工具也是在<code>0.94.10</code>版本中才开始添加到<code>Hammer</code>中的，并且默认没有安装，需要手动安装<code>ceph-test</code>包这个工具才有，并且在<code>0.94.10</code>版本中这个工具是无法使用的，因为<a href="https://github.com/ceph/ceph/pull/13605/files" target="_blank" rel="noopener">这个bug</a>，到目前为止(<code>2017-03-30</code>),这个PR还没有合并到Hammer分支，我已经编译好了的<code>ceph-monstore-tool</code>工具，在<a href="http://pan.baidu.com/s/1c1TvcL6" target="_blank" rel="noopener">http://pan.baidu.com/s/1c1TvcL6</a> 密码：<code>jjic</code></p>
+<p>步骤跟张鹏教程基本上一致，只是有些参数可能不太一致</p>
+<h1 id="脚本"><a href="#脚本" class="headerlink" title="脚本"></a>脚本</h1><p>这个脚本是对官方的那个类似的脚本的补充，官方的那个脚本好像有点问题<br>添加注释会让文章中的代码很难看，还有gist在这里：<a href="https://gist.github.com/jingniao/839c6fe3b635a90b0fcfafa19c1b1557" target="_blank" rel="noopener">gist代码</a><br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">MS=/tmp/mon-store</span><br><span class="line">KEYRING=/etc/ceph/ceph.client.admin.keyring</span><br><span class="line">FSID=12730f48-443f-4483-9231-545496c5973a</span><br><span class="line">MONID=new-test-3</span><br><span class="line">MONIP=192.168.213.133</span><br><span class="line">HOSTS="new-test-1 new-test-2"</span><br><span class="line">mkdir $MS</span><br><span class="line">for host in $HOSTS; do</span><br><span class="line">  rsync -avz $MS/ root@$host:$MS/</span><br><span class="line">  rm -rf $MS</span><br><span class="line">  ssh -t root@$host "for osd in /var/lib/ceph/osd/ceph-*; do    ceph-objectstore-tool --data-path \$osd --journal-path \$osd/journal --op update-mon-db --mon-store-path $MS; done"</span><br><span class="line">  rsync -avz root@$host:$MS/ $MS/</span><br><span class="line">done</span><br><span class="line"></span><br><span class="line">ceph-authtool $KEYRING --import-keyring /var/lib/ceph/mon/ceph*/keyring</span><br><span class="line">ceph-authtool $KEYRING -n client.admin --cap mon 'allow *' --cap osd 'allow *' --cap mds 'allow *'</span><br><span class="line">./ceph-monstore-tool $MS rebuild -- --keyring $KEYRING</span><br><span class="line"><span class="meta">#</span><span class="bash"> mkdir /var/lib/ceph/mon/ceph-<span class="variable">$MONID</span> </span></span><br><span class="line">cp -ra $MS/store.db /var/lib/ceph/mon/ceph-$MONID/</span><br><span class="line"><span class="meta">#</span><span class="bash"> touch /var/lib/ceph/mon/ceph-<span class="variable">$MONID</span>/<span class="keyword">done</span></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> touch /var/lib/ceph/mon/ceph-<span class="variable">$MONID</span>/sysvinit</span></span><br><span class="line">monmaptool --create --fsid $FSID --add $MONID $MONIP:6789  monmap</span><br><span class="line">ceph-mon -i $MONID --inject-monmap monmap</span><br><span class="line">service ceph start mon</span><br></pre></td></tr></table></figure></p>
+<p>基本上就这些了</p>
+
+      
+    </div>
+
+    
+
+    
+      
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/shell/" rel="tag"># shell</a>
+          
+            <a href="/tags/ceph/" rel="tag"># ceph</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/03/21/learn-1/" rel="next" title="笔记学习（一）">
+                <i class="fa fa-chevron-left"></i> 笔记学习（一）
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/10/31/pygame-learn-one/" rel="prev" title="pygame学习（一）">
+                pygame学习（一） <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  
+  <p class="site-author-name" itemprop="name">惊鸟</p>
+  <div class="site-description motion-element" itemprop="description">python,运维</div>
+</div>
+
+
+  <nav class="site-state motion-element">
+    
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">21</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+    
+
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+        
+        
+          
+        
+          
+        
+          
+        
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span>
+        
+      </div>
+    
+
+    
+      
+      
+      <div class="site-state-item site-state-tags">
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span>
+        
+      </div>
+    
+  </nav>
+
+
+
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+          
+          
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#背景介绍"><span class="nav-number">1.</span> <span class="nav-text">背景介绍</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#已有的解决方案"><span class="nav-number">2.</span> <span class="nav-text">已有的解决方案</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#准备工作"><span class="nav-number">3.</span> <span class="nav-text">准备工作</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#脚本"><span class="nav-number">4.</span> <span class="nav-text">脚本</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">惊鸟</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v3.9.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> v7.2.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+
+
+  <script src="/js/utils.js?v=7.2.0"></script>
+
+  <script src="/js/motion.js?v=7.2.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.2.0"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.2.0"></script>
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.2.0"></script>
+<script src="/js/post-details.js?v=7.2.0"></script>
+
+
+
+  <script src="/js/next-boot.js?v=7.2.0"></script>
+
+  
+
+  
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+// GET RESPONSIVE HEIGHT PASSED FROM IFRAME
+
+window.addEventListener("message", function(e) {
+  var data = e.data;
+  if ((typeof data === 'string') && (data.indexOf('ciu_embed') > -1)) {
+    var featureID = data.split(':')[1];
+    var height = data.split(':')[2];
+    $(`iframe[data-feature=${featureID}]`).height(parseInt(height) + 30);
+  }
+}, false);
+</script>
+
+
+
+
+
+
+
+
+  
+
+</body>
+</html>

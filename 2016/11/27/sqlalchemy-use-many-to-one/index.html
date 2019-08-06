@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.2.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.2.0" color="#222">
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/main.css?v=7.2.0">
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.2.0',
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    translation: {
+      copy_button: '复制',
+      copy_success: '复制成功',
+      copy_failure: '复制失败'
+    }
+  };
+</script>
+
+  <meta name="description" content="前言前篇文章简单介绍了使用sqlalchemy的时候怎么建立数据库，创建数据映射表，初始化，以及简单的插入，删除，更新，查询操作。当然，查询包含的东西还有很多，其中的细节还有很多，这个在使用过程中会根据你的需求慢慢侧重不同的方向。数据库使用中一个无法绕过的功能就是外键的使用，虽然很多人认为web应用中应该消除外键，减少依赖。在高并发的程序中，web应用确实可能为了性能增加冗余信息的方式消除外键，但">
+<meta name="keywords" content="python,sqlalchemy,sql">
+<meta property="og:type" content="article">
+<meta property="og:title" content="sqlalchemy的使用（二），表间外键约束">
+<meta property="og:url" content="https://jingniao.github.io/2016/11/27/sqlalchemy-use-many-to-one/index.html">
+<meta property="og:site_name" content="惊鸟的技术小站">
+<meta property="og:description" content="前言前篇文章简单介绍了使用sqlalchemy的时候怎么建立数据库，创建数据映射表，初始化，以及简单的插入，删除，更新，查询操作。当然，查询包含的东西还有很多，其中的细节还有很多，这个在使用过程中会根据你的需求慢慢侧重不同的方向。数据库使用中一个无法绕过的功能就是外键的使用，虽然很多人认为web应用中应该消除外键，减少依赖。在高并发的程序中，web应用确实可能为了性能增加冗余信息的方式消除外键，但">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2019-08-06T01:12:29.485Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="sqlalchemy的使用（二），表间外键约束">
+<meta name="twitter:description" content="前言前篇文章简单介绍了使用sqlalchemy的时候怎么建立数据库，创建数据映射表，初始化，以及简单的插入，删除，更新，查询操作。当然，查询包含的东西还有很多，其中的细节还有很多，这个在使用过程中会根据你的需求慢慢侧重不同的方向。数据库使用中一个无法绕过的功能就是外键的使用，虽然很多人认为web应用中应该消除外键，减少依赖。在高并发的程序中，web应用确实可能为了性能增加冗余信息的方式消除外键，但">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="惊鸟的技术小站" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="https://jingniao.github.io/2016/11/27/sqlalchemy-use-many-to-one/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  
+  <title>sqlalchemy的使用（二），表间外键约束 | 惊鸟的技术小站</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">惊鸟的技术小站</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">坚持记录</p>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>首页</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://jingniao.github.io/2016/11/27/sqlalchemy-use-many-to-one/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="惊鸟">
+      <meta itemprop="description" content="python,运维">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="惊鸟的技术小站">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">sqlalchemy的使用（二），表间外键约束
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+
+          
+          
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2016-11-27 08:55:07" itemprop="dateCreated datePublished" datetime="2016-11-27T08:55:07+00:00">2016-11-27</time>
+            </span>
+          
+
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-08-06 01:12:29" itemprop="dateModified" datetime="2019-08-06T01:12:29+00:00">2019-08-06</time>
+              </span>
+            
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/python/" itemprop="url" rel="index"><span itemprop="name">python</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          <br>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>前篇文章简单介绍了使用sqlalchemy的时候怎么建立数据库，创建数据映射表，初始化，以及简单的插入，删除，更新，查询操作。当然，查询包含的东西还有很多，其中的细节还有很多，这个在使用过程中会根据你的需求慢慢侧重不同的方向。<br>数据库使用中一个无法绕过的功能就是外键的使用，虽然很多人认为web应用中应该消除外键，减少依赖。在高并发的程序中，web应用确实可能为了性能增加冗余信息的方式消除外键，但是在普通的程序，数据库操作没有成为瓶颈的时候，外键能比较好的维护数据实体之间的关系，较少冗余。</p>
+<a id="more"></a>  
+<h1 id="外键使用"><a href="#外键使用" class="headerlink" title="外键使用"></a>外键使用</h1><h2 id="一对多关系"><a href="#一对多关系" class="headerlink" title="一对多关系"></a>一对多关系</h2><p>接上篇的<code>Persion</code>，现在添加另外一个表，<code>Book</code>，一个<code>Persion</code>有多个<code>Book</code>，<code>Book</code>有一个外键auther_id，它指向Persion的id列<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Book</span><span class="params">(Base)</span>:</span></span><br><span class="line">    __tablename = <span class="string">'book'</span></span><br><span class="line">    id = Column(Integer, autoincrement=<span class="literal">True</span>, primary_key=<span class="literal">True</span>)</span><br><span class="line">    name=Column(String(<span class="number">1024</span>))</span><br><span class="line">    auther_id = Column(Integer,ForeignKey(<span class="string">'persion.id'</span>))</span><br></pre></td></tr></table></figure></p>
+<p>然后在<code>Persion</code>表中添加反向映射关系，让<code>Persion</code>能查询关联到它的<code>Book</code>，也让<code>Book</code>能查询到它归属的<code>Persion</code><br>在<code>Persion</code>中添加一个类属性：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">books = relationship(<span class="string">'Book'</span>,backref=<span class="string">'auther'</span>,lazy=<span class="string">"dynamic"</span>)</span><br></pre></td></tr></table></figure></p>
+<p>books并不是可以实际输入的列，在创建Persion的时候不需要设置，只要在Book表中的有外键指向Persion表，则就可以通过books查询Book对象。<br>relationship，第一个参数是Book的类名，backref参数是给Book添加一个属性，在这个例子中Book.auther指向的是Persion，可以通过它来查询。<br>lazy则是加载方式，默认是select，是在查询books归属的Persion的时候就自动查询并加载books，也就是一次查询所有数据，这个例子中，设为dynamic是生成一个Query对象，但是还没有进行数据查询，可以使用类似与：per_obj.books.query(xxx).all()类似的语句对books进行二次过滤查询。</p>
+<blockquote>
+<p>值得一提的是，上面例子中backref向Book注入的auther的lazy属性默认是select，也就是在加载Book的结果的时候，也会顺便查询它归属的Persion</p>
+</blockquote>
+<h3 id="注意点说明"><a href="#注意点说明" class="headerlink" title="注意点说明"></a>注意点说明</h3><ul>
+<li>一对多关系，外键在多的一方，relationship在一的一方。</li>
+<li>lazy属性的设置需要根据需求来设置，如果每次查询Persion都需要获取Book，那默认值select是值得使用。</li>
+<li>如果两个表是互相有外键字段指向对方，则relationship的lazy属性不能是默认值，需要是dynamic之类的动态加载，否则会造成查询的时候，循环引用的问题。也就是说外键关系是一个环的时候select是不合适的。</li>
+<li>如果一个表有多个外键，指向不同的表的时候relationship除了第一个参数，映射类的名字外，还需要指定关联关系是怎么样的primaryjoin=’Persion.id==Book.auther_id’，类似的这样的关系。<h2 id="多对一关系"><a href="#多对一关系" class="headerlink" title="多对一关系"></a>多对一关系</h2>这种是外键关系跟relationship在同一个类定义中。  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Parent</span><span class="params">(Base)</span>:</span></span><br><span class="line">    __tablename__ = <span class="string">'parent'</span></span><br><span class="line">    id = Column(Integer, primary_key=<span class="literal">True</span>)</span><br><span class="line">    child_id = Column(Integer, ForeignKey(<span class="string">'child.id'</span>))</span><br><span class="line">    child = relationship(<span class="string">"Child"</span>, backref=<span class="string">"parents"</span>)</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Child</span><span class="params">(Base)</span>:</span></span><br><span class="line">    __tablename__ = <span class="string">'child'</span></span><br><span class="line">    id = Column(Integer, primary_key=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>官方给的例子是个。</p>
+<h2 id="一对一"><a href="#一对一" class="headerlink" title="一对一"></a>一对一</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sqlalchemy.orm <span class="keyword">import</span> backref</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Parent</span><span class="params">(Base)</span>:</span></span><br><span class="line">    __tablename__ = <span class="string">'parent'</span></span><br><span class="line">    id = Column(Integer, primary_key=<span class="literal">True</span>)</span><br><span class="line">    child_id = Column(Integer, ForeignKey(<span class="string">'child.id'</span>))</span><br><span class="line">    child = relationship(<span class="string">"Child"</span>, backref=backref(</span><br><span class="line">        <span class="string">"parent"</span>, uselist=<span class="literal">False</span>))</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Child</span><span class="params">(Base)</span>:</span></span><br><span class="line">    __tablename__ = <span class="string">'child'</span></span><br><span class="line">    id = Column(Integer, primary_key=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+<p>看上去是特殊的多对一，backref=backref(“parent”, uselist=False)是关键，将关系映射中，一的注入的属性原来是个列表的时候，uselist=False否认是一个列表。</p>
+<h2 id="多对多"><a href="#多对多" class="headerlink" title="多对多"></a>多对多</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">association_table = Table(<span class="string">'association'</span>, Base.metadata,</span><br><span class="line">    Column(<span class="string">'left_id'</span>, Integer, ForeignKey(<span class="string">'left.id'</span>)),</span><br><span class="line">    Column(<span class="string">'right_id'</span>, Integer, ForeignKey(<span class="string">'right.id'</span>))</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Parent</span><span class="params">(Base)</span>:</span></span><br><span class="line">    __tablename__ = <span class="string">'left'</span></span><br><span class="line">    id = Column(Integer, primary_key=<span class="literal">True</span>)</span><br><span class="line">    children = relationship(</span><br><span class="line">        <span class="string">"Child"</span>,</span><br><span class="line">        secondary=association_table,</span><br><span class="line">        back_populates=<span class="string">"parents"</span>)</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Child</span><span class="params">(Base)</span>:</span></span><br><span class="line">    __tablename__ = <span class="string">'right'</span></span><br><span class="line">    id = Column(Integer, primary_key=<span class="literal">True</span>)</span><br><span class="line">    parents = relationship(</span><br><span class="line">        <span class="string">"Parent"</span>,</span><br><span class="line">        secondary=association_table,</span><br><span class="line">        back_populates=<span class="string">"children"</span>)</span><br></pre></td></tr></table></figure>
+<p>关键在于：relationship的back_populates，借助中间表来定义多对多。</p>
+<blockquote>
+<p>说明：工作中使用的最多的是一对多关系，多对多关系的我试验过，但是没用到，另外两种是官方给的例子。<br>工作中使用两个一对多，互相只想多方，如下面的例子：   </p>
+</blockquote>
+<h2 id="循环一对多关系"><a href="#循环一对多关系" class="headerlink" title="循环一对多关系"></a>循环一对多关系</h2><p>还是我自己写的Persion和Book关系，<code>一个人可能写过多本书，一本Book只有一个Persion写，N个人最喜欢1个书，每个人只能有一个最喜欢的</code>这个例子可能不大恰当，但是就是两个单向的一对多关系，是不能用多对多关系的，下面是我给出的例子</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Persion</span><span class="params">(Base)</span>:</span></span><br><span class="line">    __tablename__ = <span class="string">'persion'</span></span><br><span class="line">    id = Column(Integer, autoincrement=<span class="literal">True</span>, primary_key=<span class="literal">True</span>)</span><br><span class="line">    name = Column(String(<span class="number">1024</span>))</span><br><span class="line">    like_id = Column(Integer, ForeignKey(<span class="string">'book.id'</span>))</span><br><span class="line">    books = relationship(<span class="string">'Book'</span>, backref=<span class="string">'auther'</span>, lazy=<span class="string">"dynamic"</span>,</span><br><span class="line">                         primaryjoin=<span class="string">'Book.auther_id==Persion.id'</span>)</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Book</span><span class="params">(Base)</span>:</span></span><br><span class="line">    __tablename__ = <span class="string">'book'</span></span><br><span class="line">    id = Column(Integer, autoincrement=<span class="literal">True</span>, primary_key=<span class="literal">True</span>)</span><br><span class="line">    likes = relationship(<span class="string">'Persion'</span>, backref=<span class="string">'like'</span>, lazy=<span class="string">"dynamic"</span>,</span><br><span class="line">                         primaryjoin=<span class="string">'Persion.like_id==Book.id'</span>)</span><br><span class="line">    name = Column(String(<span class="number">1024</span>))</span><br><span class="line">    auther_id = Column(Integer, ForeignKey(<span class="string">'persion.id'</span>))</span><br></pre></td></tr></table></figure>
+<p>主要是添加primaryjoin属性，说明关联的字段</p>
+<p>在使用sqlalchemy的时候有很多属性，类似lazy，backref，primaryjoin这样的属性，备选项很多，需要多多查询官方文档。只有使用过过才会比较熟悉</p>
+
+      
+    </div>
+
+    
+
+    
+      
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/python/" rel="tag"># python</a>
+          
+            <a href="/tags/sqlalchemy/" rel="tag"># sqlalchemy</a>
+          
+            <a href="/tags/sql/" rel="tag"># sql</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/11/26/sqlalchemy-use-start/" rel="next" title="sqlalchemy的使用（一）——初始化以及简单使用">
+                <i class="fa fa-chevron-left"></i> sqlalchemy的使用（一）——初始化以及简单使用
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/03/21/learn-1/" rel="prev" title="笔记学习（一）">
+                笔记学习（一） <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  
+  <p class="site-author-name" itemprop="name">惊鸟</p>
+  <div class="site-description motion-element" itemprop="description">python,运维</div>
+</div>
+
+
+  <nav class="site-state motion-element">
+    
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">21</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+    
+
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+        
+        
+          
+        
+          
+        
+          
+        
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span>
+        
+      </div>
+    
+
+    
+      
+      
+      <div class="site-state-item site-state-tags">
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span>
+        
+      </div>
+    
+  </nav>
+
+
+
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+          
+          
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#外键使用"><span class="nav-number">2.</span> <span class="nav-text">外键使用</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#一对多关系"><span class="nav-number">2.1.</span> <span class="nav-text">一对多关系</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#注意点说明"><span class="nav-number">2.1.1.</span> <span class="nav-text">注意点说明</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#多对一关系"><span class="nav-number">2.2.</span> <span class="nav-text">多对一关系</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#一对一"><span class="nav-number">2.3.</span> <span class="nav-text">一对一</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#多对多"><span class="nav-number">2.4.</span> <span class="nav-text">多对多</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#循环一对多关系"><span class="nav-number">2.5.</span> <span class="nav-text">循环一对多关系</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">惊鸟</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v3.9.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> v7.2.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+
+
+  <script src="/js/utils.js?v=7.2.0"></script>
+
+  <script src="/js/motion.js?v=7.2.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.2.0"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.2.0"></script>
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.2.0"></script>
+<script src="/js/post-details.js?v=7.2.0"></script>
+
+
+
+  <script src="/js/next-boot.js?v=7.2.0"></script>
+
+  
+
+  
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+// GET RESPONSIVE HEIGHT PASSED FROM IFRAME
+
+window.addEventListener("message", function(e) {
+  var data = e.data;
+  if ((typeof data === 'string') && (data.indexOf('ciu_embed') > -1)) {
+    var featureID = data.split(':')[1];
+    var height = data.split(':')[2];
+    $(`iframe[data-feature=${featureID}]`).height(parseInt(height) + 30);
+  }
+}, false);
+</script>
+
+
+
+
+
+
+
+
+  
+
+</body>
+</html>

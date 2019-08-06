@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.2.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.2.0" color="#222">
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/main.css?v=7.2.0">
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.2.0',
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    translation: {
+      copy_button: '复制',
+      copy_success: '复制成功',
+      copy_failure: '复制失败'
+    }
+  };
+</script>
+
+  <meta name="description" content="正则 用户名 &amp;quot;/^[a-zA-Z][a-zA-Z0-9_]{5,15}$/&amp;quot; 字母开头，包含数字字母下划线 总长度为6-16位 用户姓名 &amp;quot;/^[\x{4e00}-\x{9fa5}A-Za-z0-9_@、.\[\]\&amp;quot;:\-]{1,100}$/u&amp;quot; 中文，数字字母符号，1到100位 手机号 &amp;quot;/^[1]{1}[0-9]{10}$/&amp;qu">
+<meta name="keywords" content="sqlalchemy,linux,mysql">
+<meta property="og:type" content="article">
+<meta property="og:title" content="学习笔记（二）">
+<meta property="og:url" content="https://jingniao.github.io/2017/12/11/learn-one/index.html">
+<meta property="og:site_name" content="惊鸟的技术小站">
+<meta property="og:description" content="正则 用户名 &amp;quot;/^[a-zA-Z][a-zA-Z0-9_]{5,15}$/&amp;quot; 字母开头，包含数字字母下划线 总长度为6-16位 用户姓名 &amp;quot;/^[\x{4e00}-\x{9fa5}A-Za-z0-9_@、.\[\]\&amp;quot;:\-]{1,100}$/u&amp;quot; 中文，数字字母符号，1到100位 手机号 &amp;quot;/^[1]{1}[0-9]{10}$/&amp;qu">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://jingniao.github.io/image/mysql_bianma.png">
+<meta property="og:updated_time" content="2019-08-06T01:12:29.485Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="学习笔记（二）">
+<meta name="twitter:description" content="正则 用户名 &amp;quot;/^[a-zA-Z][a-zA-Z0-9_]{5,15}$/&amp;quot; 字母开头，包含数字字母下划线 总长度为6-16位 用户姓名 &amp;quot;/^[\x{4e00}-\x{9fa5}A-Za-z0-9_@、.\[\]\&amp;quot;:\-]{1,100}$/u&amp;quot; 中文，数字字母符号，1到100位 手机号 &amp;quot;/^[1]{1}[0-9]{10}$/&amp;qu">
+<meta name="twitter:image" content="https://jingniao.github.io/image/mysql_bianma.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="惊鸟的技术小站" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="https://jingniao.github.io/2017/12/11/learn-one/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  
+  <title>学习笔记（二） | 惊鸟的技术小站</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">惊鸟的技术小站</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">坚持记录</p>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>首页</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://jingniao.github.io/2017/12/11/learn-one/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="惊鸟">
+      <meta itemprop="description" content="python,运维">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="惊鸟的技术小站">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">学习笔记（二）
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+
+          
+          
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2017-12-11 20:56:21" itemprop="dateCreated datePublished" datetime="2017-12-11T20:56:21+00:00">2017-12-11</time>
+            </span>
+          
+
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-08-06 01:12:29" itemprop="dateModified" datetime="2019-08-06T01:12:29+00:00">2019-08-06</time>
+              </span>
+            
+          
+
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          <br>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="正则"><a href="#正则" class="headerlink" title="正则"></a>正则</h2><ul>
+<li>用户名 <code>&quot;/^[a-zA-Z][a-zA-Z0-9_]{5,15}$/&quot;</code> 字母开头，包含数字字母下划线 总长度为6-16位</li>
+<li>用户姓名 <code>&quot;/^[\x{4e00}-\x{9fa5}A-Za-z0-9_@、.\[\]\&quot;:\-]{1,100}$/u&quot;</code> 中文，数字字母符号，1到100位</li>
+<li>手机号 <code>&quot;/^[1]{1}[0-9]{10}$/&quot;</code> 以1开头，11位数字</li>
+</ul>
+<a id="more"></a>
+<h2 id="mysql编码"><a href="#mysql编码" class="headerlink" title="mysql编码"></a>mysql编码</h2><ul>
+<li>查看字符集 <code>show variables like &#39;%char%&#39;;</code><br><img src="/image/mysql_bianma.png" alt="&#39;mysql编码&#39;"><br><code>character_set_results</code>、<code>character_set_client</code> 、<code>character_set_connection</code> 这三者会被mysql配置文件里<code>[client]</code>里的<code>default-character-set</code>影响，也会被<code>set names utf8</code> 影响</li>
+</ul>
+<ul>
+<li>mysql 5.5.3 版本之后支持<code>utf8mb4</code>，也就是支持4字节的utf8编码，目前常用的emoji字符有不少都是4字节的，目前支持utf8mb4编码的mysql驱动只有；[‘pymysql’, ‘mysqldb’]</li>
+<li><p>如果要设置需要存储utf8mb4字符，可以进行如下设置：</p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">[mysqld]</span></span><br><span class="line"></span><br><span class="line"><span class="attr">character-set-server</span>=utf8mb4 </span><br><span class="line"><span class="comment"># 服务器默认编码，会影响新创建的数据库的编码，数据库的编码会影响新创</span></span><br><span class="line"><span class="comment"># 建的表的编码，表的编码一般是存储数据的事迹编码，当然还可以设置某列</span></span><br><span class="line"><span class="comment"># 的编码</span></span><br><span class="line"></span><br><span class="line"><span class="attr">collation-server</span> = utf8mb4_unicode_ci <span class="comment">#排序规则</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 根据语义，初始化链接的时候，执行某些语句</span></span><br><span class="line"><span class="attr">init_connect</span>=<span class="string">'SET NAMES utf8mb4'</span> </span><br><span class="line"><span class="attr">init_connect</span>=<span class="string">'SET collation_connection = utf8mb4_unicode_ci'</span></span><br><span class="line"><span class="attr">character-set-client-handshake</span>=<span class="literal">true</span> <span class="comment"># 忽略客户端的编码设置</span></span><br><span class="line"></span><br><span class="line"><span class="section">[client]</span></span><br><span class="line"><span class="attr">default-character-set</span>=utf8mb4 <span class="comment"># 客户端默认编码设置</span></span><br><span class="line"><span class="comment"># 与 set names utf8mb4一样的想过</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>如果有条件的话，还是将数据库设置为同一编码，数据库连接也设置位同一编码，否则有时候是自找麻烦</p>
+</li>
+</ul>
+<h2 id="flask"><a href="#flask" class="headerlink" title="flask"></a>flask</h2><ul>
+<li><code>flask</code>默认自带的<code>session</code>，是将数据加密存放在<code>client</code>端的<code>cookie</code>里的</li>
+<li><code>python2</code> 中<code>flask</code>，<code>jinja2</code> 内容默认使用的都是<code>unicode</code>，在使用<code>jinja2</code>模板的时候，会将传入的<code>str</code>类型进行<code>decode(sys.getdefaultencoding)</code>操作，所以如果传入 <code>&#39;中文&#39;</code> 而不是 <code>u&#39;中文&#39;</code>，则j<code>inja2</code>会抛出异常</li>
+<li><code>flask-sqlalchemy</code> 在使用<code>mysql</code>作为后端的时候，会自动添加<code>charset=utf8</code>参数，在某些编码情况下，会出现比较恼人的编码问题</li>
+<li><code>sqlite3</code> 在存取数据只接受<code>unicode</code>，不接受<code>str</code>，mysql大部分驱动会接受<code>str</code>跟<code>unicode</code></li>
+</ul>
+<h2 id="pymysql-sqlalchemy"><a href="#pymysql-sqlalchemy" class="headerlink" title="pymysql/sqlalchemy"></a>pymysql/sqlalchemy</h2><p>为了保证数据库的中文编码正确，以下是几点建议：</p>
+<ul>
+<li>数据表字段的编码应该兼容中文的，例如<code>latin1</code>就不兼容<code>中文</code>，尽量不要使用这种编码，不是说一定不能用，如果禁止使用<code>mysql驱动</code>的<code>unicode</code>编码功能，在驱动外进行手动<code>encode</code> <code>decode</code>，传递给数据库直接是<code>str</code>，或者说是字节数组，还是可以得到正确的内容的，这就是所谓的错进错出了，但这时候因为数据库无法正确理解数据内容，也就无法正常排序查找了。</li>
+<li>数据库连接字符集尽量使用与兼容中文的编码，例如<code>gbk</code>，<code>utf-8</code>，然后<code>python2</code>中输入给数据库的字符串使用<code>unicode</code>，不要使用<code>str</code>，让数据库驱动处理编码问题。</li>
+<li>当<code>sqlalchemy</code>的<code>engine</code>的<code>url</code>有<code>charset</code>设置的时候，数据库驱动会默认使用<code>use_unicode=True</code>，这时候查询到的<code>orm</code>中的<code>String</code>类型，会以<code>unicode</code>返回，这点要注意，但是如果没有设置<code>charset</code>，在<code>python2</code>下<code>pymysql</code>中会将<code>charset</code>默认设置为<code>latin1</code>，然后<code>use_unicode</code>会被设置为<code>False</code>，这时会导致返回的<code>String</code>类型的数据为<code>python2</code>中的<code>str</code>，所以为了防止混乱，在<code>engine</code>创建的时候设置<code>charset</code>是一个比较好的选择</li>
+<li><code>mysql</code>驱动<code>pymysql</code>对输入<code>str</code>跟<code>unicode</code>的处理差别：<code>pymysql/cursors.py Cursor._escape_args</code> 函数会进行参数编码检测，如果输入的参数是<code>unicode</code>类型的，则会调用<code>encode</code>使用连接编码进行编码</li>
+</ul>
+
+      
+    </div>
+
+    
+
+    
+      
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/sqlalchemy/" rel="tag"># sqlalchemy</a>
+          
+            <a href="/tags/linux/" rel="tag"># linux</a>
+          
+            <a href="/tags/mysql/" rel="tag"># mysql</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/10/31/pygame-learn-one/" rel="next" title="pygame学习（一）">
+                <i class="fa fa-chevron-left"></i> pygame学习（一）
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/12/30/cas-docker-config/" rel="prev" title="cas配置——service配置修改">
+                cas配置——service配置修改 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  
+  <p class="site-author-name" itemprop="name">惊鸟</p>
+  <div class="site-description motion-element" itemprop="description">python,运维</div>
+</div>
+
+
+  <nav class="site-state motion-element">
+    
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">21</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+    
+
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+        
+        
+          
+        
+          
+        
+          
+        
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span>
+        
+      </div>
+    
+
+    
+      
+      
+      <div class="site-state-item site-state-tags">
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span>
+        
+      </div>
+    
+  </nav>
+
+
+
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+          
+          
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#正则"><span class="nav-number">1.</span> <span class="nav-text">正则</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql编码"><span class="nav-number">2.</span> <span class="nav-text">mysql编码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#flask"><span class="nav-number">3.</span> <span class="nav-text">flask</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pymysql-sqlalchemy"><span class="nav-number">4.</span> <span class="nav-text">pymysql/sqlalchemy</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">惊鸟</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v3.9.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> v7.2.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+
+
+  <script src="/js/utils.js?v=7.2.0"></script>
+
+  <script src="/js/motion.js?v=7.2.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.2.0"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.2.0"></script>
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.2.0"></script>
+<script src="/js/post-details.js?v=7.2.0"></script>
+
+
+
+  <script src="/js/next-boot.js?v=7.2.0"></script>
+
+  
+
+  
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+// GET RESPONSIVE HEIGHT PASSED FROM IFRAME
+
+window.addEventListener("message", function(e) {
+  var data = e.data;
+  if ((typeof data === 'string') && (data.indexOf('ciu_embed') > -1)) {
+    var featureID = data.split(':')[1];
+    var height = data.split(':')[2];
+    $(`iframe[data-feature=${featureID}]`).height(parseInt(height) + 30);
+  }
+}, false);
+</script>
+
+
+
+
+
+
+
+
+  
+
+</body>
+</html>
